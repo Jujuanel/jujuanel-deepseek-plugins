@@ -1,0 +1,41 @@
+{
+  "name": "dsh-sidebar-shortcut",
+  "version": "1.0.0",
+  "description": "Command+B (macOS) / Ctrl+B (Windows, Linux) toggles the DSH Web sidebar",
+  "license": "MIT",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml"
+  ],
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "dsh-bundle",
+    "dsh-plugin",
+    "sidebar",
+    "shortcut"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-layout"
+      ],
+      "platform": "web",
+      "immediately": true
+    }
+  }
+}
