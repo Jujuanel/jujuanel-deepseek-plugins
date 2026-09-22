@@ -1,0 +1,3 @@
+- insert:
+    - id: sidebar-shortcut
+      name: 'dsh-sidebar-shortcut'
