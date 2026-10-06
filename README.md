@@ -10,7 +10,7 @@ Command+B（macOS）/ Ctrl+B（Windows、Linux）收起或展开 Deepseek Web �
 
 ### Install
 
-
+https://greasyfork.org/scripts/596923
 
 
 
@@ -23,3 +23,7 @@ Command+B（macOS）/ Ctrl+B（Windows、Linux）收起或展开 Deepseek Web �
 Command+B（macOS）/ Ctrl+B（Windows、Linux）收起或展开 DSH Web 的侧边栏。
 
 ### Install
+
+终端运行：
+
+`dsh plugin --profile web add "Jujuanel/jujuanel-deepseek-plugins#path:/dsh-plugins/dsh-sidebar-shortcut"`
