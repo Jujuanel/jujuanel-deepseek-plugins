@@ -69,4 +69,6 @@
 
 文件：`deepseek-sidebar-shortcut.user.js`
 
-`Command+B`（macOS）/ `Ctrl+B`（Windows、Linux）收起或展开侧栏。
+- 按快捷键收起或展开侧栏，默认 `Command+B`（macOS）/ `Ctrl+B`（Windows、Linux）。
+- 在油猴扩展菜单中选择"设置快捷键"，按下新的组合键即可自定义，组合键需包含 `Command`、`Ctrl` 或 `Alt` 等修饰键（F1–F12 可单独使用），按 `Esc` 取消。
+- 选择"恢复默认快捷键"回到系统默认值。设置保存在油猴脚本存储中，刷新页面后保留。
