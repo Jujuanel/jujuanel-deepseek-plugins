@@ -6,11 +6,13 @@ Jujuanel Deepseek Plugins
 
 ### Feature：
 
-Command+B（macOS）/ Ctrl+B（Windows、Linux）收起或展开 Deepseek Web 的侧边栏。
+按快捷键收起或展开 Deepseek Web 的侧边栏，默认 Command+B（macOS）/ Ctrl+B（Windows、Linux），可在油猴菜单中自定义。
 
 ### Install
 
 https://greasyfork.org/scripts/596923
+
+各网页脚本的详细说明见 [deepseek-web.md](deepseek-web.md)。
 
 
 
