@@ -2,9 +2,9 @@
 // @name         DeepSeek 会话一键删除（⌘/Ctrl + D）
 // @name:en      DeepSeek Quick Delete (⌘/Ctrl + D)
 // @namespace    https://chat.deepseek.com/
-// @version      1.1.1
-// @description  在侧栏会话左侧显示原生删除图标；点击或按快捷键直接删除会话，无需确认。快捷键（默认 ⌘/Ctrl + D）和删除当前会话后打开的页面可在油猴菜单中设置。
-// @description:en  Show a delete icon beside each chat in the sidebar; click it or press a shortcut to delete a chat instantly without confirmation. The shortcut (default ⌘/Ctrl + D) and the page opened after deleting the current chat can be set from the userscript manager menu.
+// @version      1.2.0
+// @description  在侧栏会话左侧显示原生删除图标，点击或按快捷键（默认 ⌘/Ctrl + D）删除会话。默认弹出网页原生确认框，可在油猴菜单中关闭确认，并设置快捷键和删除当前会话后打开的页面。
+// @description:en  Show a delete icon beside each chat in the sidebar; click it or press a shortcut (default ⌘/Ctrl + D) to delete a chat. The site's native confirmation dialog appears by default; from the userscript manager menu you can turn confirmation off, change the shortcut, and choose the page opened after deleting the current chat.
 // @author       Jujuanel
 // @license      MIT
 // @icon         https://cdn.deepseek.com/favicon.png
@@ -50,9 +50,12 @@
   };
 
   const DIALOG_CLASS = 'ds-quick-delete-dialog';
+  const NATIVE_DIALOG_SELECTOR = `.ds-modal-wrapper:not(.${DIALOG_CLASS}) [role="dialog"]`;
+  const NATIVE_CONFIRM_SELECTOR = `${NATIVE_DIALOG_SELECTOR} .ds-button--error`;
 
   let shortcut = GM_getValue('shortcut', DEFAULT_SHORTCUT);
   let afterDelete = GM_getValue('afterDelete', 'new');
+  let confirmDelete = GM_getValue('confirmDelete', true);
   let recording = false;
   let menuIds = [];
   let busy = false;
@@ -76,7 +79,7 @@
       background: var(--dsw-alias-bg-hover, rgba(128,128,128,.12));
     }
     html[data-ds-quick-deleting] .ds-dropdown-menu,
-    html[data-ds-quick-deleting] .ds-modal-wrapper { visibility: hidden !important; }
+    html[data-ds-quick-deleting="silent"] .ds-modal-wrapper { visibility: hidden !important; }
     .${DIALOG_CLASS}--notice .ds-modal-content {
       box-shadow: 0 0 1px 0 rgba(0, 0, 0, .2), 0 0 4px 0 rgba(0, 0, 0, .02), 0 12px 32px 0 rgba(0, 0, 0, .08);
     }
@@ -94,8 +97,8 @@
       const button = document.createElement('button');
       button.type = 'button';
       button.className = BUTTON_CLASS;
-      button.title = '直接删除此会话（无需确认）';
-      button.setAttribute('aria-label', '直接删除此会话');
+      button.title = '删除此会话';
+      button.setAttribute('aria-label', '删除此会话');
       button.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="${DELETE_PATH}" fill="currentColor"/></svg>`;
       row.prepend(button);
     }
@@ -112,10 +115,11 @@
   }).observe(document.body, { childList: true, subtree: true });
   enhanceRows();
 
+  // timeout 为 null 时一直等待，用于等待用户在原生确认框中操作。
   function waitFor(find, message, timeout = 4000) {
     return new Promise((resolve, reject) => {
       const observer = new MutationObserver(check);
-      const timer = setTimeout(() => {
+      const timer = timeout === null ? null : setTimeout(() => {
         observer.disconnect();
         reject(new Error(message));
       }, timeout);
@@ -129,6 +133,21 @@
       observer.observe(document.body, { childList: true, subtree: true, attributes: true });
       check();
     });
+  }
+
+  // 等待用户在原生确认框中操作：点击确认删除时返回 true，取消或关闭时返回 false。
+  async function waitForUserConfirm() {
+    let confirmed = false;
+    const onClick = event => {
+      if (event.target.closest?.(NATIVE_CONFIRM_SELECTOR)) confirmed = true;
+    };
+    document.addEventListener('click', onClick, true);
+    try {
+      await waitFor(() => !document.querySelector(NATIVE_DIALOG_SELECTOR), null, null);
+    } finally {
+      document.removeEventListener('click', onClick, true);
+    }
+    return confirmed;
   }
 
   function reportError(error) {
@@ -168,7 +187,7 @@
     const isCurrent = row.pathname === location.pathname;
     const nextHref = isCurrent ? neighborHref(row) : null;
     busy = true;
-    document.documentElement.setAttribute('data-ds-quick-deleting', '');
+    document.documentElement.setAttribute('data-ds-quick-deleting', confirmDelete ? 'confirm' : 'silent');
     try {
       menuButton.click();
       const deleteOption = await waitFor(() =>
@@ -177,10 +196,14 @@
         ), '找不到原生 Delete 菜单，网页结构可能已改变。');
       deleteOption.click();
       const confirmButton = await waitFor(() =>
-        [...document.querySelectorAll('.ds-modal-wrapper [role="dialog"] .ds-button--error')].find(button =>
+        [...document.querySelectorAll(NATIVE_CONFIRM_SELECTOR)].find(button =>
           /^(Delete chat|删除对话|删除会话)$/i.test(button.textContent.trim())
         ), '找不到原生删除按钮，网页结构可能已改变。');
-      confirmButton.click();
+      if (confirmDelete) {
+        if (!(await waitForUserConfirm())) return;
+      } else {
+        confirmButton.click();
+      }
       await waitFor(() => !findRow(href), '会话仍在侧栏中，请检查网络或网站提示。', 10000);
       if (nextHref) {
         // 网站删除当前会话后会跳到新会话页，等跳转完成再打开相邻会话。
@@ -253,6 +276,7 @@
     menuIds = [
       GM_registerMenuCommand(`设置快捷键（当前：${formatShortcut(shortcut)}）`, startRecording),
       GM_registerMenuCommand(`删除当前会话后打开（当前：${AFTER_DELETE_OPTIONS[afterDelete]}）`, chooseAfterDelete),
+      GM_registerMenuCommand(`删除前确认（当前：${confirmDelete ? '开启' : '关闭'}）`, toggleConfirmDelete),
     ];
   }
 
@@ -342,6 +366,13 @@
   function cancelRecording() {
     recording = false;
     closeDialog();
+  }
+
+  function toggleConfirmDelete() {
+    confirmDelete = !confirmDelete;
+    GM_setValue('confirmDelete', confirmDelete);
+    registerMenu();
+    showNotice('删除前确认', confirmDelete ? '已开启，删除前弹出网页原生确认框' : '已关闭，删除时不再确认');
   }
 
   function chooseAfterDelete() {
