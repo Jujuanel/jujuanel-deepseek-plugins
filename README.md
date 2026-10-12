@@ -1,31 +1,19 @@
-Jujuanel Deepseek Plugins
+# Jujuanel DeepSeek Plugins
 
-# Deepseek Web Script
+## DeepSeek 网页油猴脚本
 
-## 1. `deepseek-sidebar-shortcut.user.js`
+| 脚本 | 功能 | 安装 |
+| --- | --- | --- |
+| 侧边栏快捷键 | 按 `⌘B`（macOS）/ `Ctrl+B`（Windows、Linux）收起或展开侧边栏，可在油猴菜单「设置快捷键」中自定义 | [Greasy Fork](https://greasyfork.org/scripts/596923) |
+| 会话一键删除 | 点击侧栏会话左侧的删除图标，或按 `Command+D` 删除当前会话，无需确认 | [Greasy Fork](https://greasyfork.org/scripts/599842) |
+| 双击重命名 | 双击侧栏会话标题直接重命名，按 `Enter` 或点击其他位置保存 | [Greasy Fork](https://greasyfork.org/scripts/599843) |
 
-### Feature：
+## DeepSeek Harness 插件
 
-按快捷键收起或展开 Deepseek Web 的侧边栏，默认 Command+B（macOS）/ Ctrl+B（Windows、Linux），可在油猴菜单中自定义。
+### `dsh-sidebar-shortcut`
 
-### Install
+按 `⌘B`（macOS）/ `Ctrl+B`（Windows、Linux）收起或展开 DSH Web 的侧边栏。
 
-https://greasyfork.org/scripts/596923
-
-各网页脚本的详细说明见 [deepseek-web.md](deepseek-web.md)。
-
-
-
-# Deepseek Harness Plugins
-
-## 1. `dsh-sidebar-shortcut`
-
-### Feature：
-
-Command+B（macOS）/ Ctrl+B（Windows、Linux）收起或展开 DSH Web 的侧边栏。
-
-### Install
-
-终端运行：
-
-`dsh plugin --profile web add "Jujuanel/jujuanel-deepseek-plugins#path:/dsh-plugins/dsh-sidebar-shortcut"`
+```bash
+dsh plugin --profile web add "Jujuanel/jujuanel-deepseek-plugins#path:/dsh-plugins/dsh-sidebar-shortcut"
+```
