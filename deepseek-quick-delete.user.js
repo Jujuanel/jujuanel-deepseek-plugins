@@ -2,8 +2,9 @@
 // @name         DeepSeek 会话一键删除（⌘D）
 // @name:en      DeepSeek Quick Delete (Command+D)
 // @namespace    https://chat.deepseek.com/
-// @version      1.0.0
+// @version      1.0.1
 // @description  在侧栏会话左侧显示原生删除图标；点击或 Command+D 直接删除会话，无需确认。
+// @description:en  Show a delete icon beside each chat in the sidebar; click it or press Command+D to delete a chat instantly without confirmation.
 // @author       Jujuanel
 // @license      MIT
 // @icon         https://cdn.deepseek.com/favicon.png

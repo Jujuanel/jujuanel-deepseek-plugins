@@ -2,8 +2,9 @@
 // @name         DeepSeek 双击会话标题重命名
 // @name:en      DeepSeek Double Click to Rename
 // @namespace    https://chat.deepseek.com/
-// @version      1.0.0
+// @version      1.0.1
 // @description  双击侧栏会话标题，直接进入网页原生标题编辑框。
+// @description:en  Double-click a chat title in the sidebar to open the site's native title editor.
 // @author       Jujuanel
 // @license      MIT
 // @icon         https://cdn.deepseek.com/favicon.png
