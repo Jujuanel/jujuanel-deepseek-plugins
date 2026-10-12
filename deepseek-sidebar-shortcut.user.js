@@ -2,7 +2,7 @@
 // @name         DeepSeek 侧边栏快捷键（⌘/Ctrl + B）
 // @name:en      DeepSeek Sidebar Shortcut (⌘/Ctrl + B)
 // @namespace    https://chat.deepseek.com/
-// @version      1.2.1
+// @version      1.2.2
 // @description  用快捷键收起或展开 chat.deepseek.com 的侧边栏，默认 Command+B（macOS）/ Ctrl+B（Windows、Linux），可在油猴菜单中自定义。
 // @description:en  Collapse or expand the sidebar of chat.deepseek.com with a shortcut. Defaults to Command+B (macOS) / Ctrl+B (Windows, Linux) and can be customized from the userscript manager menu.
 // @author       Jujuanel
@@ -126,10 +126,9 @@
 
   const DIALOG_CLASS = 'ds-sidebar-shortcut-dialog';
 
-  // 复用网页原生弹窗的结构与类名，样式、配色和字体随网页的浅色、深色主题变化；改为贴顶显示，无遮罩的提示加上阴影与页面区分。
+  // 复用网页原生弹窗的结构与类名，样式、配色和字体随网页的浅色、深色主题变化；无遮罩的提示加上阴影与页面区分。
   const style = document.createElement('style');
   style.textContent = `
-    .${DIALOG_CLASS}.ds-modal-wrapper .ds-modal { margin: 40px auto auto; }
     .${DIALOG_CLASS}--notice .ds-modal-content {
       box-shadow: 0 0 1px 0 rgba(0, 0, 0, .2), 0 0 4px 0 rgba(0, 0, 0, .02), 0 12px 32px 0 rgba(0, 0, 0, .08);
     }

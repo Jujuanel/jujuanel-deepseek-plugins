@@ -2,7 +2,7 @@
 // @name         DeepSeek 会话一键删除（⌘/Ctrl + D）
 // @name:en      DeepSeek Quick Delete (⌘/Ctrl + D)
 // @namespace    https://chat.deepseek.com/
-// @version      1.1.0
+// @version      1.1.1
 // @description  在侧栏会话左侧显示原生删除图标；点击或按快捷键直接删除会话，无需确认。快捷键（默认 ⌘/Ctrl + D）和删除当前会话后打开的页面可在油猴菜单中设置。
 // @description:en  Show a delete icon beside each chat in the sidebar; click it or press a shortcut to delete a chat instantly without confirmation. The shortcut (default ⌘/Ctrl + D) and the page opened after deleting the current chat can be set from the userscript manager menu.
 // @author       Jujuanel
@@ -58,7 +58,7 @@
   let busy = false;
   let scheduled = false;
 
-  // 设置弹窗复用网页原生弹窗的结构与类名，样式、配色和字体随网页的浅色、深色主题变化；改为贴顶显示，无遮罩的提示加上阴影与页面区分。
+  // 设置弹窗复用网页原生弹窗的结构与类名，样式、配色和字体随网页的浅色、深色主题变化；无遮罩的提示加上阴影与页面区分。
   const style = document.createElement('style');
   style.textContent = `
     ${ROW_SELECTOR}:has(> .${BUTTON_CLASS}) { justify-content: flex-start; }
@@ -77,7 +77,6 @@
     }
     html[data-ds-quick-deleting] .ds-dropdown-menu,
     html[data-ds-quick-deleting] .ds-modal-wrapper { visibility: hidden !important; }
-    .${DIALOG_CLASS}.ds-modal-wrapper .ds-modal { margin: 40px auto auto; }
     .${DIALOG_CLASS}--notice .ds-modal-content {
       box-shadow: 0 0 1px 0 rgba(0, 0, 0, .2), 0 0 4px 0 rgba(0, 0, 0, .02), 0 12px 32px 0 rgba(0, 0, 0, .08);
     }
