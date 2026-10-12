@@ -2,7 +2,7 @@
 // @name         DeepSeek 侧边栏快捷键（⌘/Ctrl + B）
 // @name:en      DeepSeek Sidebar Shortcut (⌘/Ctrl + B)
 // @namespace    https://chat.deepseek.com/
-// @version      1.1.0
+// @version      1.2.0
 // @description  用快捷键收起或展开 chat.deepseek.com 的侧边栏，默认 Command+B（macOS）/ Ctrl+B（Windows、Linux），可在油猴菜单中自定义。
 // @description:en  Collapse or expand the sidebar of chat.deepseek.com with a shortcut. Defaults to Command+B (macOS) / Ctrl+B (Windows, Linux) and can be customized from the userscript manager menu.
 // @author       Jujuanel
@@ -12,7 +12,6 @@
 // @run-at       document-idle
 // @grant        GM_getValue
 // @grant        GM_setValue
-// @grant        GM_deleteValue
 // @grant        GM_registerMenuCommand
 // @grant        GM_unregisterMenuCommand
 // @noframes
@@ -45,22 +44,9 @@
     'AltLeft', 'AltRight', 'ShiftLeft', 'ShiftRight',
   ]);
 
-  const PROMPT_CLASS = 'ds-sidebar-shortcut-prompt';
-
   let shortcut = GM_getValue(STORAGE_KEY, DEFAULT_SHORTCUT);
-  let recording = null;
+  let recording = false;
   let menuIds = [];
-
-  const style = document.createElement('style');
-  style.textContent = `
-    .${PROMPT_CLASS} {
-      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-      z-index: 9999; padding: 12px 18px; border-radius: 8px;
-      background: #1f2937; color: white; font: 14px sans-serif;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, .2);
-    }
-  `;
-  document.head.append(style);
 
   function isVisible(el) {
     const rect = el.getBoundingClientRect();
@@ -135,41 +121,83 @@
     menuIds.forEach((id) => GM_unregisterMenuCommand(id));
     menuIds = [
       GM_registerMenuCommand(`设置快捷键（当前：${formatShortcut(shortcut)}）`, startRecording),
-      GM_registerMenuCommand(`恢复默认快捷键（${formatShortcut(DEFAULT_SHORTCUT)}）`, resetShortcut),
     ];
   }
 
-  function showPrompt(text, duration) {
-    document.querySelector(`.${PROMPT_CLASS}`)?.remove();
-    const prompt = document.createElement('div');
-    prompt.className = PROMPT_CLASS;
-    prompt.textContent = text;
-    document.body.append(prompt);
-    if (duration) setTimeout(() => prompt.remove(), duration);
-    return prompt;
+  const DIALOG_CLASS = 'ds-sidebar-shortcut-dialog';
+
+  // 复用网页原生弹窗的结构与类名，样式、配色和字体随网页的浅色、深色主题变化；仅改为贴顶显示。
+  const style = document.createElement('style');
+  style.textContent = `
+    .${DIALOG_CLASS}.ds-modal-wrapper .ds-modal { margin: 40px auto auto; }
+  `;
+  document.head.append(style);
+
+  let dialog = null;
+
+  function openDialog(title, message) {
+    closeDialog();
+    const overlay = document.createElement('div');
+    overlay.className = 'ds-modal-overlay';
+    overlay.style.zIndex = '1025';
+    const wrapper = document.createElement('div');
+    wrapper.className = `ds-theme ds-modal-wrapper ${DIALOG_CLASS}`;
+    wrapper.style.zIndex = '1026';
+    wrapper.innerHTML = `
+      <div class="ds-modal" aria-modal="true">
+        <div class="ds-modal-content ds-elevated ds-modal-content--dialog" role="dialog">
+          <div class="ds-modal-content__header-wrapper"><div class="ds-modal-content__title"></div></div>
+          <div class="ds-modal-content__main"></div>
+          <div class="ds-modal-content__footer">
+            <div class="ds-modal-content__button-group">
+              <div role="button" tabindex="0" class="ds-button ds-button--outlinedNeutral ds-button--outlined ds-button--capsule ds-button--m ds-button--icon-relative-m ds-button--min-width">
+                <div class="ds-button__background"></div><div class="ds-button__border"></div><span class="ds-button__content">取消</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    wrapper.querySelector('.ds-modal-content__title').textContent = title;
+    const main = wrapper.querySelector('.ds-modal-content__main');
+    main.textContent = message;
+    const footer = wrapper.querySelector('.ds-modal-content__footer');
+    footer.querySelector('[role="button"]').addEventListener('click', cancelRecording);
+    overlay.addEventListener('click', cancelRecording);
+    document.body.append(overlay, wrapper);
+    dialog = { overlay, wrapper, main, footer };
+  }
+
+  function closeDialog() {
+    if (!dialog) return;
+    dialog.overlay.remove();
+    dialog.wrapper.remove();
+    dialog = null;
   }
 
   function saveShortcut(value) {
     shortcut = value;
     GM_setValue(STORAGE_KEY, value);
     registerMenu();
-    showPrompt(`侧边栏快捷键已设为 ${formatShortcut(value)}`, 2000);
-  }
-
-  function resetShortcut() {
-    shortcut = DEFAULT_SHORTCUT;
-    GM_deleteValue(STORAGE_KEY);
-    registerMenu();
-    showPrompt(`侧边栏快捷键已恢复为 ${formatShortcut(DEFAULT_SHORTCUT)}`, 2000);
+    recording = false;
+    const current = dialog;
+    current.main.textContent = `侧边栏快捷键已设为 ${formatShortcut(value)}`;
+    current.footer.remove();
+    setTimeout(() => {
+      if (dialog === current) closeDialog();
+    }, 1500);
   }
 
   function startRecording() {
-    recording = showPrompt('请按下新的侧边栏快捷键（需包含 ⌘/Ctrl/Alt 等修饰键，Esc 取消）');
+    recording = true;
+    openDialog(
+      '设置侧边栏快捷键',
+      `当前为 ${formatShortcut(shortcut)}。请按下新的组合键，需包含 ⌘/Ctrl/Alt 等修饰键，按 Esc 取消。`
+    );
   }
 
-  function finishRecording() {
-    recording?.remove();
-    recording = null;
+  function cancelRecording() {
+    recording = false;
+    closeDialog();
   }
 
   function onRecordKeyDown(event) {
@@ -178,17 +206,16 @@
     if (MODIFIER_CODES.has(event.code)) return;
 
     if (event.code === 'Escape') {
-      finishRecording();
+      cancelRecording();
       return;
     }
 
     const isFunctionKey = /^F\d{1,2}$/.test(event.code);
     if (!isFunctionKey && !event.metaKey && !event.ctrlKey && !event.altKey) {
-      recording.textContent = '快捷键需包含 ⌘/Ctrl/Alt 等修饰键，请重新按下（Esc 取消）';
+      dialog.main.textContent = '快捷键需包含 ⌘/Ctrl/Alt 等修饰键，请重新按下，按 Esc 取消。';
       return;
     }
 
-    finishRecording();
     saveShortcut({
       code: event.code,
       key: (event.key || '').toLowerCase(),
