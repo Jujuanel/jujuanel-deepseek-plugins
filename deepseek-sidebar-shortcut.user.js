@@ -2,7 +2,7 @@
 // @name         DeepSeek 侧边栏快捷键（⌘/Ctrl + B）
 // @name:en      DeepSeek Sidebar Shortcut (⌘/Ctrl + B)
 // @namespace    https://chat.deepseek.com/
-// @version      1.2.0
+// @version      1.2.1
 // @description  用快捷键收起或展开 chat.deepseek.com 的侧边栏，默认 Command+B（macOS）/ Ctrl+B（Windows、Linux），可在油猴菜单中自定义。
 // @description:en  Collapse or expand the sidebar of chat.deepseek.com with a shortcut. Defaults to Command+B (macOS) / Ctrl+B (Windows, Linux) and can be customized from the userscript manager menu.
 // @author       Jujuanel
@@ -126,52 +126,79 @@
 
   const DIALOG_CLASS = 'ds-sidebar-shortcut-dialog';
 
-  // 复用网页原生弹窗的结构与类名，样式、配色和字体随网页的浅色、深色主题变化；仅改为贴顶显示。
+  // 复用网页原生弹窗的结构与类名，样式、配色和字体随网页的浅色、深色主题变化；改为贴顶显示，无遮罩的提示加上阴影与页面区分。
   const style = document.createElement('style');
   style.textContent = `
     .${DIALOG_CLASS}.ds-modal-wrapper .ds-modal { margin: 40px auto auto; }
+    .${DIALOG_CLASS}--notice .ds-modal-content {
+      box-shadow: 0 0 1px 0 rgba(0, 0, 0, .2), 0 0 4px 0 rgba(0, 0, 0, .02), 0 12px 32px 0 rgba(0, 0, 0, .08);
+    }
   `;
   document.head.append(style);
 
   let dialog = null;
 
-  function openDialog(title, message) {
+  function createButton(label, primary, onClick) {
+    const button = document.createElement('div');
+    button.setAttribute('role', 'button');
+    button.tabIndex = 0;
+    button.className = `ds-button ${primary ? 'ds-button--primary ds-button--filled' : 'ds-button--outlinedNeutral ds-button--outlined'} ds-button--capsule ds-button--m ds-button--icon-relative-m ds-button--min-width`;
+    button.innerHTML = `<div class="ds-button__background"></div>${primary ? '' : '<div class="ds-button__border"></div>'}<span class="ds-button__content"></span>`;
+    button.querySelector('.ds-button__content').textContent = label;
+    button.addEventListener('click', onClick);
+    return button;
+  }
+
+  // modal 为 true 时显示原生的模糊遮罩，点击遮罩触发 onDismiss；为 false 时仅显示弹窗，不拦截页面操作。
+  function openDialog({ title, message, buttons = [], modal = true, onDismiss }) {
     closeDialog();
-    const overlay = document.createElement('div');
-    overlay.className = 'ds-modal-overlay';
-    overlay.style.zIndex = '1025';
     const wrapper = document.createElement('div');
-    wrapper.className = `ds-theme ds-modal-wrapper ${DIALOG_CLASS}`;
+    wrapper.className = `ds-theme ds-modal-wrapper ${DIALOG_CLASS}${modal ? '' : ` ${DIALOG_CLASS}--notice`}`;
     wrapper.style.zIndex = '1026';
     wrapper.innerHTML = `
-      <div class="ds-modal" aria-modal="true">
+      <div class="ds-modal" aria-modal="${modal}">
         <div class="ds-modal-content ds-elevated ds-modal-content--dialog" role="dialog">
           <div class="ds-modal-content__header-wrapper"><div class="ds-modal-content__title"></div></div>
           <div class="ds-modal-content__main"></div>
-          <div class="ds-modal-content__footer">
-            <div class="ds-modal-content__button-group">
-              <div role="button" tabindex="0" class="ds-button ds-button--outlinedNeutral ds-button--outlined ds-button--capsule ds-button--m ds-button--icon-relative-m ds-button--min-width">
-                <div class="ds-button__background"></div><div class="ds-button__border"></div><span class="ds-button__content">取消</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>`;
     wrapper.querySelector('.ds-modal-content__title').textContent = title;
     const main = wrapper.querySelector('.ds-modal-content__main');
     main.textContent = message;
-    const footer = wrapper.querySelector('.ds-modal-content__footer');
-    footer.querySelector('[role="button"]').addEventListener('click', cancelRecording);
-    overlay.addEventListener('click', cancelRecording);
-    document.body.append(overlay, wrapper);
-    dialog = { overlay, wrapper, main, footer };
+    if (buttons.length) {
+      const footer = document.createElement('div');
+      footer.className = 'ds-modal-content__footer';
+      const group = document.createElement('div');
+      group.className = 'ds-modal-content__button-group';
+      group.append(...buttons.map(({ label, primary, onClick }) => createButton(label, primary, onClick)));
+      footer.append(group);
+      wrapper.querySelector('.ds-modal-content').append(footer);
+    } else {
+      main.classList.add('ds-modal-content__main--pad-bottom');
+    }
+    const elements = [wrapper];
+    if (modal) {
+      const overlay = document.createElement('div');
+      overlay.className = 'ds-modal-overlay';
+      overlay.style.zIndex = '1025';
+      overlay.addEventListener('click', onDismiss);
+      elements.unshift(overlay);
+    }
+    document.body.append(...elements);
+    dialog = { elements, main };
+    return dialog;
   }
 
   function closeDialog() {
-    if (!dialog) return;
-    dialog.overlay.remove();
-    dialog.wrapper.remove();
+    dialog?.elements.forEach((el) => el.remove());
     dialog = null;
+  }
+
+  function showNotice(title, message) {
+    const notice = openDialog({ title, message, modal: false });
+    setTimeout(() => {
+      if (dialog === notice) closeDialog();
+    }, 1500);
   }
 
   function saveShortcut(value) {
@@ -179,20 +206,17 @@
     GM_setValue(STORAGE_KEY, value);
     registerMenu();
     recording = false;
-    const current = dialog;
-    current.main.textContent = `侧边栏快捷键已设为 ${formatShortcut(value)}`;
-    current.footer.remove();
-    setTimeout(() => {
-      if (dialog === current) closeDialog();
-    }, 1500);
+    showNotice('设置侧边栏快捷键', `侧边栏快捷键已设为 ${formatShortcut(value)}`);
   }
 
   function startRecording() {
     recording = true;
-    openDialog(
-      '设置侧边栏快捷键',
-      `当前为 ${formatShortcut(shortcut)}。请按下新的组合键，需包含 ⌘/Ctrl/Alt 等修饰键，按 Esc 取消。`
-    );
+    openDialog({
+      title: '设置侧边栏快捷键',
+      message: `当前为 ${formatShortcut(shortcut)}。请按下新的组合键，需包含 ⌘/Ctrl/Alt 等修饰键，按 Esc 取消。`,
+      buttons: [{ label: '取消', onClick: cancelRecording }],
+      onDismiss: cancelRecording,
+    });
   }
 
   function cancelRecording() {
