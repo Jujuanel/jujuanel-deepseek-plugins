@@ -1,10 +1,10 @@
 // ==UserScript==
-// @name         DeepSeek 会话一键删除（⌘/Ctrl + D）
-// @name:en      DeepSeek Quick Delete (⌘/Ctrl + D)
+// @name         DeepSeek 会话一键删除
+// @name:en      DeepSeek Quick Delete
 // @namespace    https://chat.deepseek.com/
-// @version      1.2.0
-// @description  在侧栏会话左侧显示原生删除图标，点击或按快捷键（默认 ⌘/Ctrl + D）删除会话。默认弹出网页原生确认框，可在油猴菜单中关闭确认，并设置快捷键和删除当前会话后打开的页面。
-// @description:en  Show a delete icon beside each chat in the sidebar; click it or press a shortcut (default ⌘/Ctrl + D) to delete a chat. The site's native confirmation dialog appears by default; from the userscript manager menu you can turn confirmation off, change the shortcut, and choose the page opened after deleting the current chat.
+// @version      1.3.0
+// @description  按快捷键（默认 ⌘/Ctrl + D）删除当前会话，可在油猴菜单中开启侧栏会话左侧的删除图标。默认弹出网页原生确认框，可关闭确认，并设置快捷键和删除当前会话后打开的页面。
+// @description:en  Press a shortcut (default ⌘/Ctrl + D) to delete the current chat; the userscript manager menu can show a delete icon beside each chat in the sidebar. The site's native confirmation dialog appears by default; you can turn confirmation off, change the shortcut, and choose the page opened after deleting the current chat.
 // @author       Jujuanel
 // @license      MIT
 // @icon         https://cdn.deepseek.com/favicon.png
@@ -56,6 +56,7 @@
   let shortcut = GM_getValue('shortcut', DEFAULT_SHORTCUT);
   let afterDelete = GM_getValue('afterDelete', 'new');
   let confirmDelete = GM_getValue('confirmDelete', true);
+  let showIcon = GM_getValue('showIcon', false);
   let recording = false;
   let menuIds = [];
   let busy = false;
@@ -92,6 +93,7 @@
   document.head.append(style);
 
   function enhanceRows() {
+    if (!showIcon) return;
     for (const row of document.querySelectorAll(ROW_SELECTOR)) {
       if (row.querySelector(`.${BUTTON_CLASS}`) || !row.querySelector('[role="button"]')) continue;
       const button = document.createElement('button');
@@ -276,6 +278,7 @@
     menuIds = [
       GM_registerMenuCommand(`设置快捷键（当前：${formatShortcut(shortcut)}）`, startRecording),
       GM_registerMenuCommand(`删除当前会话后打开（当前：${AFTER_DELETE_OPTIONS[afterDelete]}）`, chooseAfterDelete),
+      GM_registerMenuCommand(`删除图标（当前：${showIcon ? '开启' : '关闭'}）`, toggleShowIcon),
       GM_registerMenuCommand(`删除前确认（当前：${confirmDelete ? '开启' : '关闭'}）`, toggleConfirmDelete),
     ];
   }
@@ -366,6 +369,15 @@
   function cancelRecording() {
     recording = false;
     closeDialog();
+  }
+
+  function toggleShowIcon() {
+    showIcon = !showIcon;
+    GM_setValue('showIcon', showIcon);
+    if (showIcon) enhanceRows();
+    else document.querySelectorAll(`.${BUTTON_CLASS}`).forEach(button => button.remove());
+    registerMenu();
+    showNotice('删除图标', showIcon ? '已开启，侧栏会话左侧显示删除图标' : '已关闭，侧栏会话左侧不再显示删除图标');
   }
 
   function toggleConfirmDelete() {

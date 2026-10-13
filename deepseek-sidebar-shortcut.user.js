@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         DeepSeek 侧边栏快捷键（⌘/Ctrl + B）
-// @name:en      DeepSeek Sidebar Shortcut (⌘/Ctrl + B)
+// @name         DeepSeek 侧边栏快捷键
+// @name:en      DeepSeek Sidebar Shortcut
 // @namespace    https://chat.deepseek.com/
-// @version      1.2.2
+// @version      1.2.3
 // @description  用快捷键收起或展开 chat.deepseek.com 的侧边栏，默认 Command+B（macOS）/ Ctrl+B（Windows、Linux），可在油猴菜单中自定义。
 // @description:en  Collapse or expand the sidebar of chat.deepseek.com with a shortcut. Defaults to Command+B (macOS) / Ctrl+B (Windows, Linux) and can be customized from the userscript manager menu.
 // @author       Jujuanel
