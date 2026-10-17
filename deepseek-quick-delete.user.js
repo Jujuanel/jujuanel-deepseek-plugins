@@ -2,14 +2,14 @@
 // @name         DeepSeek 会话一键删除
 // @name:en      DeepSeek Quick Delete
 // @namespace    https://chat.deepseek.com/
-// @version      1.3.1
+// @version      1.3.2
 // @description  按快捷键（默认 ⌘/Ctrl + D）删除当前会话，可在油猴菜单中开启侧栏会话左侧的删除图标。默认弹出网页原生确认框，可关闭确认，并设置快捷键和删除当前会话后打开的页面。
 // @description:en  Press a shortcut (default ⌘/Ctrl + D) to delete the current chat; the userscript manager menu can show a delete icon beside each chat in the sidebar. The site's native confirmation dialog appears by default; you can turn confirmation off, change the shortcut, and choose the page opened after deleting the current chat.
 // @author       Jujuanel
 // @license      MIT
 // @icon         https://cdn.deepseek.com/favicon.png
 // @match        https://chat.deepseek.com/*
-// @run-at       document-start
+// @run-at       document-idle
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_registerMenuCommand
@@ -90,6 +90,7 @@
       background: #b42318; color: white; font: 14px sans-serif;
     }
   `;
+  document.head.append(style);
 
   function enhanceRows() {
     if (!showIcon) return;
@@ -106,18 +107,15 @@
   }
 
   // 只在 DOM 更新后合并扫描，支持新会话、分页加载和 SPA 导航。
-  function init() {
-    document.head.append(style);
-    new MutationObserver(() => {
-      if (scheduled) return;
-      scheduled = true;
-      requestAnimationFrame(() => {
-        scheduled = false;
-        enhanceRows();
-      });
-    }).observe(document.body, { childList: true, subtree: true });
-    enhanceRows();
-  }
+  new MutationObserver(() => {
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(() => {
+      scheduled = false;
+      enhanceRows();
+    });
+  }).observe(document.body, { childList: true, subtree: true });
+  enhanceRows();
 
   // timeout 为 null 时一直等待，用于等待用户在原生确认框中操作。
   function waitFor(find, message, timeout = 4000) {
@@ -431,7 +429,6 @@
     });
   }
 
-  // 网页自带 ⌘/Ctrl + D 删除快捷键，监听同样注册在 window 捕获阶段；脚本在 document-start 先注册，才能优先处理并拦截。
   window.addEventListener('keydown', event => {
     if (recording) {
       onRecordKeyDown(event);
@@ -450,6 +447,4 @@
   }, true);
 
   registerMenu();
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
-  else init();
 })();
